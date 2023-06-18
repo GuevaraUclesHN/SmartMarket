@@ -2,7 +2,7 @@
 
 public class StockService
 {
-   public async Task<bool> AddStockItem(string stockItem)
+   public async Task<bool> AddStockItemAsync(string stockItem)
    {
       var stockSerializer = new StockSerializer();
       var stockItemObject = stockSerializer.Deserialize(stockItem);
