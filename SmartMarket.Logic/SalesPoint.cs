@@ -1,11 +1,11 @@
 namespace SmartMarket.Logic;
 
-public class SalePoint
+public class SalesPoint
 {
     private readonly Dictionary<string, int> _productsInCart;
     private readonly IEnumerable<StockItem> _stock;
 
-    public SalePoint(IEnumerable<StockItem> stock)
+    public SalesPoint(IEnumerable<StockItem> stock)
     {
         _stock = stock;
         _productsInCart = new Dictionary<string, int>();
@@ -41,6 +41,12 @@ public class SalePoint
                 var numberOfDeals = quantity / stockItem.MembershipDeal.Quantity;
                 var remainder = quantity % stockItem.MembershipDeal.Quantity;
                 total = numberOfDeals * stockItem.MembershipDeal.Price + remainder * stockItem.Price;
+            }
+
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            if (today.DayOfWeek is DayOfWeek.Monday or DayOfWeek.Tuesday)
+            {
+                total -= total * 0.05m;
             }
             totals.Add(product, total);
         }
