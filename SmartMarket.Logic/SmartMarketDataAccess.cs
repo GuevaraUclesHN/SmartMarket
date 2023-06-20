@@ -1,4 +1,5 @@
 using Microsoft.Data.SqlClient;
+using SmartMarket.Logic.Models;
 
 namespace SmartMarket.Logic;
 

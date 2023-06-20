@@ -1,4 +1,6 @@
 using SmartMarket.Logic;
+using SmartMarket.Logic.Interfaces;
+using SmartMarket.Logic.Models;
 
 namespace SmartMarket.Tests;
 
@@ -22,12 +24,17 @@ public class SalesPointTests
                 ProviderName = "Milk Provider"
             }
         };
-        var salesPoint = new SalesPoint(stock);
-        
+        var stockProvider = new StockProvider(stock);
+        var dateProvider = new MockDateProvider();
+        var salesPoint = new SalesPoint(stockProvider, dateProvider);
+
+
         // Act
+        dateProvider.SetCurrentDate(new DateOnly(2023, 6, 21));
         salesPoint.ScanItem("Milk");
         var totals = salesPoint.GetTotals();
         
+
         //Assert
         Assert.Equal(1.23m, totals["Milk"]);
     }
@@ -50,12 +57,18 @@ public class SalesPointTests
                 ProviderName = "Milk Provider"
             }
         };
-        var salesPoint = new SalesPoint(stock);
-        
+
+        var stockProvider = new StockProvider(stock);
+        var dateProvider = new MockDateProvider(); // Use the mock date provider
+        var salesPoint = new SalesPoint(stockProvider, dateProvider);
+
+
         // Act
         salesPoint.ScanItem("Milk");
         salesPoint.ScanItem("Milk");
         salesPoint.ScanItem("Milk");
+        dateProvider.SetCurrentDate(new DateOnly(2023, 6, 21)); // Example: Monday
+
         var totals = salesPoint.GetTotals();
         
         //Assert
@@ -87,12 +100,15 @@ public class SalesPointTests
                 }
             }
         };
-        var salesPoint = new SalesPoint(stock);
+        var stockProvider = new StockProvider(stock);
+        var dateProvider = new MockDateProvider(); // Use the mock date provider
+        var salesPoint = new SalesPoint(stockProvider, dateProvider);
         
         // Act
         salesPoint.ScanItem("Milk");
         salesPoint.ScanItem("Milk");
         salesPoint.ScanItem("Milk");
+        dateProvider.SetCurrentDate(new DateOnly(2023, 6, 21)); // Example: Monday
         var totals = salesPoint.GetTotals();
         
         //Assert
@@ -122,14 +138,17 @@ public class SalesPointTests
                     Product = "Milk"
                 }
             }
-        };
-        var salesPoint = new SalesPoint(stock);
-        
+        }; 
+        var stockProvider = new StockProvider(stock);
+        var dateProvider = new MockDateProvider();
+        var salesPoint = new SalesPoint(stockProvider, dateProvider);
+
         // Act
         salesPoint.ScanItem("Milk");
         salesPoint.ScanItem("Milk");
         salesPoint.ScanItem("Milk");
         salesPoint.ScanItem("Milk");
+        dateProvider.SetCurrentDate(new DateOnly(2023, 6, 23)); // Example: Monday
         var totals = salesPoint.GetTotals();
         
         //Assert
@@ -157,14 +176,48 @@ public class SalesPointTests
                 }
             }
         };
-        
-        var salesPoint = new SalesPoint(stock);
-        
+        var stockProvider = new StockProvider(stock);
+        var dateProvider = new MockDateProvider();
+        var salesPoint = new SalesPoint(stockProvider, dateProvider);
+ 
         // Act
         salesPoint.ScanItem("Milk");
         var totals = salesPoint.GetTotals();
-        
+        dateProvider.SetCurrentDate(new DateOnly(2023, 6, 23));
         //Assert
         Assert.Equal(1.23m * 0.95m, totals["Milk"]);
+    }
+
+    [Fact]
+    public void ScanningAnItem_OnSaturdayStartingWithS_ReturnsTenPercentDiscount()
+    {
+        // Arrange
+        var stock = new List<StockItem>
+    {
+        new StockItem
+        {
+            ProductName = "Soap",
+            Price = 2.50m,
+            ProducedOn = DateOnly.FromDateTime(DateTime.Now),
+            ProviderId = Guid.NewGuid(),
+            ProviderName = "Soap Provider",
+            MembershipDeal = null
+        }
+    };
+
+        var stockProvider = new StockProvider(stock);
+        var dateProvider = new MockDateProvider();
+        var salesPoint = new SalesPoint(stockProvider, dateProvider);
+
+        // Act
+        salesPoint.ScanItem("Soap");
+
+        // Set the desired date for testing (a Saturday)
+        dateProvider.SetCurrentDate(new DateOnly(2023, 6, 24)); // Example: Saturday
+
+        var totals = salesPoint.GetTotals();
+
+        // Assert
+        Assert.Equal(2.50m * 0.90m, totals["Soap"]);
     }
 }

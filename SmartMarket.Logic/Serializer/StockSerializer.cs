@@ -1,6 +1,9 @@
-namespace SmartMarket.Logic;
+using SmartMarket.Logic.Interfaces;
+using SmartMarket.Logic.Models;
 
-public class StockSerializer
+namespace SmartMarket.Logic.Serializer;
+
+public class StockSerializer:IStockSerializer
 {
     public StockItem Deserialize(string stockItem)
     {

@@ -1,8 +1,10 @@
 using System.Text.Json;
+using SmartMarket.Logic.Interfaces;
+using SmartMarket.Logic.Models;
 
 namespace SmartMarket.Logic;
 
-public class ProviderManagementService : IDisposable
+public class ProviderManagementService : IProviderManagementService
 {
     private readonly HttpClient _client;
 

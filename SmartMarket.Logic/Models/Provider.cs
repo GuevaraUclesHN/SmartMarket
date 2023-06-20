@@ -1,4 +1,4 @@
-namespace SmartMarket.Logic;
+namespace SmartMarket.Logic.Models;
 
 public class Provider
 {
