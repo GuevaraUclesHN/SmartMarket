@@ -1,49 +1,80 @@
 ﻿using SmartMarket.Logic.DataAccess;
+using SmartMarket.Logic.Handler;
+using SmartMarket.Logic.Interfaces;
+using SmartMarket.Logic.Models;
 using SmartMarket.Logic.Serializer;
 using SmartMarket.Logic.Services;
+using System;
 
-namespace SmartMarket.Logic;
-
-public class StockService
+namespace SmartMarket.Logic
 {
-    public async Task<bool> AddStockItemAsync(string stockItem)
+    public class StockService : IStockService
     {
-        var stockSerializer = new StockSerializer();
-        var stockItemObject = stockSerializer.Deserialize(stockItem);
-        if (string.IsNullOrEmpty(stockItemObject.ProductName))
+        private readonly IStockSerializer stockSerializer;
+        private readonly IProviderManagementService providerManagementService;
+        private readonly IExpirationHandler expirationHandler;
+
+        public StockService(IStockSerializer stockSerializer, IProviderManagementService providerManagementService, IExpirationHandler expirationHandler)
         {
-            return false;
+            this.stockSerializer = stockSerializer;
+            this.providerManagementService = providerManagementService;
+            this.expirationHandler = expirationHandler;
         }
 
-        if (stockItemObject.Price <= 0)
+        public StockService() : this(new StockSerializer(), new ProviderManagementService(), GetExpirationHandler())
         {
-            return false;
         }
 
-        var now = DateOnly.FromDateTime(DateTime.Now);
-        var currentAge = now.DayNumber - stockItemObject.ProducedOn.DayNumber;
-        switch (currentAge)
+        public async Task<bool> AddStockItemAsync(string stockItem)
         {
-            case > 30:
+            var stockItemObject = stockSerializer.Deserialize(stockItem);
+
+            if (!IsValidStockItem(stockItemObject))
+            {
                 return false;
-            case > 15:
-            case > 7 when stockItemObject.MembershipDeal is not null:
-                stockItemObject.IsCloseToExpirationDate = true;
-                break;
-            default:
-                stockItemObject.IsCloseToExpirationDate = false;
-                break;
+            }
+
+            IsCloseToExpirationDate(stockItemObject);
+
+            await AddProviderIfNotFound(stockItemObject);
+
+            SmartMarketDataAccess.AddStockItem(stockItemObject);
+            return true;
         }
 
-        using (var providerManagementService = new ProviderManagementService())
+        public bool IsValidStockItem(StockItem stockItem)
         {
-            var provider = await providerManagementService.GetFromApiByIdAsync(stockItemObject.ProviderId);
+            return !string.IsNullOrEmpty(stockItem.ProductName) && stockItem.Price > 0;
+        }
+
+        public bool IsCloseToExpirationDate(StockItem stockItem)
+        {
+            var now = DateOnly.FromDateTime(DateTime.Now);
+            var currentAge = now.DayNumber - stockItem.ProducedOn.DayNumber;
+
+            return expirationHandler.Handle(currentAge, stockItem);
+        }
+
+        public async Task AddProviderIfNotFound(StockItem stockItem)
+        {
+            var provider = await providerManagementService.GetFromApiByIdAsync(stockItem.ProviderId);
+
             if (provider is null)
             {
-                SmartMarketDataAccess.AddProvider(stockItemObject.ProviderId, stockItemObject.ProviderName);
+                SmartMarketDataAccess.AddProvider(stockItem.ProviderId, stockItem.ProviderName);
             }
         }
-        SmartMarketDataAccess.AddStockItem(stockItemObject);
-        return true;
+
+        private static IExpirationHandler GetExpirationHandler()
+        {
+            var thirtyDaysHandler = new ThirtyDaysHandler();
+            var fifteenDaysHandler = new FifteenDaysHandler();
+            var sevenDaysHandler = new SevenDaysHandler();
+
+            thirtyDaysHandler.SetNextHandler(fifteenDaysHandler);
+            fifteenDaysHandler.SetNextHandler(sevenDaysHandler);
+
+            return thirtyDaysHandler;
+        }
     }
 }

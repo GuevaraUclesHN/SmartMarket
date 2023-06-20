@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SmartMarket.Logic.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,8 +7,8 @@ using System.Threading.Tasks;
 
 namespace SmartMarket.Logic.Interfaces
 {
-    public interface ISalesPointFactory
+    public interface IExpirationHandler
     {
-        ISalesPoint CreateSalesPoint();
+        bool Handle(int currentAge, StockItem stockItem);
     }
 }
