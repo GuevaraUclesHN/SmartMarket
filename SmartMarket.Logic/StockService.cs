@@ -1,5 +1,6 @@
 ﻿using SmartMarket.Logic.Interfaces;
-using SmartMarket.Logic.Serializer;
+using SmartMarket.Logic.Models;
+
 
 namespace SmartMarket.Logic;
 
@@ -14,7 +15,6 @@ public class StockService
     {
         _stockSerializer = stockSerializer;
         _providerManagementService = providerManagementService;
-        
     }
 
 
@@ -33,18 +33,8 @@ public class StockService
 
         var now = DateOnly.FromDateTime(DateTime.Now);
         var currentAge = now.DayNumber - stockItemObject.ProducedOn.DayNumber;
-        switch (currentAge)
-        {
-            case > 30:
-                return false;
-            case > 15:
-            case > 7 when stockItemObject.MembershipDeal is not null:
-                stockItemObject.IsCloseToExpirationDate = true;
-                break;
-            default:
-                stockItemObject.IsCloseToExpirationDate = false;
-                break;
-        }
+
+        SetCloseToExpirationDate(stockItemObject);
 
         var provider = await _providerManagementService.GetFromApiByIdAsync(stockItemObject.ProviderId);
         if (provider is null)
@@ -55,4 +45,28 @@ public class StockService
         SmartMarketDataAccess.AddStockItem(stockItemObject);
         return true;
     }
+
+
+    private void SetCloseToExpirationDate(StockItem stockItem)
+    {
+        var now = DateOnly.FromDateTime(DateTime.Now);
+        var currentAge = now.DayNumber - stockItem.ProducedOn.DayNumber;
+
+        var conditions = new[]
+        {
+                new { Condition = new Func<int, bool>(age => age > 30), Action = new Action(() => stockItem.IsCloseToExpirationDate = false) },
+                new { Condition = new Func<int, bool>(age => age > 15 || (age > 7 && stockItem.MembershipDeal != null)), Action = new Action(() => stockItem.IsCloseToExpirationDate = true) },
+                new { Condition = new Func<int, bool>(age => true), Action = new Action(() => stockItem.IsCloseToExpirationDate = false) }
+        };
+
+        foreach (var condition in conditions)
+        {
+            if (condition.Condition(currentAge))
+            {
+                condition.Action();
+                break;
+            }
+        }
+    }
+
 }
