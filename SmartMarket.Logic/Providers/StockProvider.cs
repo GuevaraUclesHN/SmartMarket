@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SmartMarket.Logic
+namespace SmartMarket.Logic.Providers
 {
     public class StockProvider : IStockProvider
     {

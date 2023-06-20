@@ -2,63 +2,62 @@ using SmartMarket.Logic.Interfaces;
 
 namespace SmartMarket.Logic;
 
-public class SalesPoint
-{
-    private readonly Dictionary<string, int> _productsInCart;
-    private readonly IStockProvider _stockProvider;
-    private readonly IDateProvider _dateProvider;
+    public class SalesPoint : ISalesPoint
+    {
+        private readonly Dictionary<string, int> _productsInCart;
+        private readonly IStockProvider _stockProvider;
+        private readonly IDateProvider _dateProvider;
+        private readonly IDiscountProvider _discountProvider;
 
-    public SalesPoint(IStockProvider stockProvider, IDateProvider dateProvider)
-    {
-        _stockProvider = stockProvider;
-        _dateProvider = dateProvider;
-        _productsInCart = new Dictionary<string, int>();
-    }
-    
-    public void ScanItem(string productName)
-    {
-        var stockItem = _stockProvider.GetStock().FirstOrDefault(x => x.ProductName == productName);
-        if (stockItem is null)
+        public SalesPoint(IStockProvider stockProvider, IDateProvider dateProvider, IDiscountProvider discountProvider)
         {
-            throw new ArgumentException($"Product {productName} not found in stock");
+            _stockProvider = stockProvider;
+            _dateProvider = dateProvider;
+            _productsInCart = new Dictionary<string, int>();
+            _discountProvider = discountProvider;
         }
 
-        if (_productsInCart.TryGetValue(productName, out var quantity))
+        public void ScanItem(string productName)
         {
-            _productsInCart[productName] = quantity + 1;
-        }
-        else
-        {
-            _productsInCart.Add(productName, 1);
-        }
-    }
-
-    public Dictionary<string, decimal> GetTotals()
-    {
-        var totals = new Dictionary<string, decimal>();
-        foreach (var (product, quantity) in _productsInCart)
-        {
-            var stockItem = _stockProvider.GetStock().First(x => x.ProductName == product);
-            var total = stockItem.Price * quantity;
-            if (stockItem.MembershipDeal is not null)
+            var stockItem = _stockProvider.GetStock().FirstOrDefault(x => x.ProductName == productName);
+            if (stockItem is null)
             {
-                var numberOfDeals = quantity / stockItem.MembershipDeal.Quantity;
-                var remainder = quantity % stockItem.MembershipDeal.Quantity;
-                total = numberOfDeals * stockItem.MembershipDeal.Price + remainder * stockItem.Price;
+                throw new ArgumentException($"Product {productName} not found in stock");
             }
 
-            var today = _dateProvider.GetCurrentDate();
-            if (today.DayOfWeek is DayOfWeek.Monday or DayOfWeek.Tuesday)
+            if (_productsInCart.TryGetValue(productName, out var quantity))
             {
-                total -= total * 0.05m;
+                _productsInCart[productName] = quantity + 1;
             }
-            else if (today.DayOfWeek == DayOfWeek.Saturday && product.StartsWith("S", StringComparison.OrdinalIgnoreCase))
+            else
             {
-                total -= total * 0.10m;
+                _productsInCart.Add(productName, 1);
             }
-            totals.Add(product, total);
         }
 
-        return totals;
+        public Dictionary<string, decimal> GetTotals()
+        {
+            var totals = new Dictionary<string, decimal>();
+            foreach (var (product, quantity) in _productsInCart)
+            {
+                var stockItem = _stockProvider.GetStock().First(x => x.ProductName == product);
+                var total = stockItem.Price * quantity;
+
+                if (stockItem.MembershipDeal is not null)
+                {
+                    var numberOfDeals = quantity / stockItem.MembershipDeal.Quantity;
+                    var remainder = quantity % stockItem.MembershipDeal.Quantity;
+                    total = numberOfDeals * stockItem.MembershipDeal.Price + remainder * stockItem.Price;
+                }
+
+                var today = _dateProvider.GetCurrentDate();
+                var discount = _discountProvider.CalculateDiscount(total, product, today); 
+
+                total -= discount;
+
+                totals.Add(product, total);
+            }
+
+            return totals;
+        }
     }
-}

@@ -1,6 +1,6 @@
-using SmartMarket.Logic;
-using SmartMarket.Logic.Interfaces;
 using SmartMarket.Logic.Models;
+using SmartMarket.Logic.Providers;
+using SmartMarket.Logic;
 
 namespace SmartMarket.Tests;
 
@@ -26,19 +26,20 @@ public class SalesPointTests
         };
         var stockProvider = new StockProvider(stock);
         var dateProvider = new MockDateProvider();
-        var salesPoint = new SalesPoint(stockProvider, dateProvider);
+        var discountProvider = new DiscountProvider();
+        var salesPoint = new SalesPoint(stockProvider, dateProvider, discountProvider);
 
 
         // Act
         dateProvider.SetCurrentDate(new DateOnly(2023, 6, 21));
         salesPoint.ScanItem("Milk");
         var totals = salesPoint.GetTotals();
-        
+
 
         //Assert
         Assert.Equal(1.23m, totals["Milk"]);
     }
-    
+
     /*
     * Escanear un producto mas de una vez y sin ofertas de membresía retorna precio por cantidad.
     */
@@ -60,7 +61,8 @@ public class SalesPointTests
 
         var stockProvider = new StockProvider(stock);
         var dateProvider = new MockDateProvider(); // Use the mock date provider
-        var salesPoint = new SalesPoint(stockProvider, dateProvider);
+        var discountProvider = new DiscountProvider();
+        var salesPoint = new SalesPoint(stockProvider, dateProvider, discountProvider);
 
 
         // Act
@@ -70,12 +72,12 @@ public class SalesPointTests
         dateProvider.SetCurrentDate(new DateOnly(2023, 6, 21)); // Example: Monday
 
         var totals = salesPoint.GetTotals();
-        
+
         //Assert
         const decimal expectedTotal = 1.23m * 3;
         Assert.Equal(expectedTotal, totals["Milk"]);
     }
-    
+
     /*
     * Escanear un producto mas de una vez con ofertas de membresía retorna precio de membresía.
     */
@@ -102,19 +104,19 @@ public class SalesPointTests
         };
         var stockProvider = new StockProvider(stock);
         var dateProvider = new MockDateProvider(); // Use the mock date provider
-        var salesPoint = new SalesPoint(stockProvider, dateProvider);
-        
+        var discountProvider = new DiscountProvider();
+        var salesPoint = new SalesPoint(stockProvider, dateProvider, discountProvider);
         // Act
         salesPoint.ScanItem("Milk");
         salesPoint.ScanItem("Milk");
         salesPoint.ScanItem("Milk");
         dateProvider.SetCurrentDate(new DateOnly(2023, 6, 21)); // Example: Monday
         var totals = salesPoint.GetTotals();
-        
+
         //Assert
         Assert.Equal(2.00m, totals["Milk"]);
     }
-    
+
     /*
     * Escanear un producto mas de una vez con ofertas de membresía y mas cantidad retorna precio de membresía mas precio por cantidad.
     */
@@ -138,11 +140,11 @@ public class SalesPointTests
                     Product = "Milk"
                 }
             }
-        }; 
+        };
         var stockProvider = new StockProvider(stock);
         var dateProvider = new MockDateProvider();
-        var salesPoint = new SalesPoint(stockProvider, dateProvider);
-
+        var discountProvider = new DiscountProvider();
+        var salesPoint = new SalesPoint(stockProvider, dateProvider, discountProvider);
         // Act
         salesPoint.ScanItem("Milk");
         salesPoint.ScanItem("Milk");
@@ -150,7 +152,7 @@ public class SalesPointTests
         salesPoint.ScanItem("Milk");
         dateProvider.SetCurrentDate(new DateOnly(2023, 6, 23)); // Example: Monday
         var totals = salesPoint.GetTotals();
-        
+
         //Assert
         Assert.Equal(2.00m + 1.23m, totals["Milk"]);
     }
@@ -178,8 +180,9 @@ public class SalesPointTests
         };
         var stockProvider = new StockProvider(stock);
         var dateProvider = new MockDateProvider();
-        var salesPoint = new SalesPoint(stockProvider, dateProvider);
- 
+        var discountProvider = new DiscountProvider();
+        var salesPoint = new SalesPoint(stockProvider, dateProvider, discountProvider);
+
         // Act
         salesPoint.ScanItem("Milk");
         var totals = salesPoint.GetTotals();
@@ -207,8 +210,8 @@ public class SalesPointTests
 
         var stockProvider = new StockProvider(stock);
         var dateProvider = new MockDateProvider();
-        var salesPoint = new SalesPoint(stockProvider, dateProvider);
-
+        var discountProvider = new DiscountProvider();
+        var salesPoint = new SalesPoint(stockProvider, dateProvider, discountProvider);
         // Act
         salesPoint.ScanItem("Soap");
 

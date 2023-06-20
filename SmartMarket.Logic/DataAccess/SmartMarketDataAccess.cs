@@ -1,7 +1,7 @@
 using Microsoft.Data.SqlClient;
 using SmartMarket.Logic.Models;
 
-namespace SmartMarket.Logic;
+namespace SmartMarket.Logic.DataAccess;
 
 //Esta clase no debe cambiarse, tanto la clase como los métodos deben permanecer estáticos.
 public static class SmartMarketDataAccess

@@ -2,7 +2,7 @@ using System.Text.Json;
 using SmartMarket.Logic.Interfaces;
 using SmartMarket.Logic.Models;
 
-namespace SmartMarket.Logic;
+namespace SmartMarket.Logic.Services;
 
 public class ProviderManagementService : IProviderManagementService
 {
